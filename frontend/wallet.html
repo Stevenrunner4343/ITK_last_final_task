@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wallet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #f4f4f4; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 10px; width: 400px; }
+        h1 { text-align: center; margin-bottom: 20px; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        hr { margin: 20px 0; }
+        #balanceResult { margin-top: 10px; text-align: center; font-size: 18px; }
+        .logout { background: #dc3545; margin-top: 10px; }
+        .logout:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>💰 Wallet</h1>
+    
+    <input type="number" id="userId" placeholder="User ID">
+    <select id="operation">
+        <option value="deposit">Deposit</option>
+        <option value="withdraw">Withdraw</option>
+    </select>
+    <input type="number" id="amount" placeholder="Amount">
+    <button id="sendBtn">Send</button>
+    
+    <hr>
+    
+    <input type="number" id="balanceUserId" placeholder="User ID for balance">
+    <button id="balanceBtn">Get Balance</button>
+    <p id="balanceResult"></p>
+    
+    <button class="logout" id=goutBtn">Logout</button>
+</div>
+    <script src="./WalletScript.js"></script>
+
+
+</body>
+</html>

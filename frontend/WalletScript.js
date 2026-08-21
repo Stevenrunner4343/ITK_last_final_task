@@ -1,48 +1,42 @@
-console.log('Скрипт загружен!');
 
-async function sendData() {
+console.log('Wallet loaded!');
+
+// Send operation
+document.getElementById('sendBtn').addEventListener('click', async function() {
     const data = {
         Id: parseInt(document.getElementById('userId').value),
         Operation: document.getElementById('operation').value,
         Amount: parseInt(document.getElementById('amount').value)
     };
-
-    const response = await fetch('http://localhost:8082/operation', {
+    
+    await fetch('http://localhost:8082/operation', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
     });
-    console.log('POST отправлен!', data);
-}
+    alert('✅ Operation sent!');
+});
 
-async function getBalance() {
+// Get balance
+document.getElementById('balanceBtn').addEventListener('click', async function() {
     const userId = parseInt(document.getElementById('balanceUserId').value);
     
-    const data = {
-        Id: userId
-    };
-
     const response = await fetch('http://localhost:8082/balance', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
+        body: JSON.stringify({ Id: userId })
     });
     
     const result = await response.json();
-    console.log('GET получен!', result);
     
     if (result.error) {
         document.getElementById('balanceResult').textContent = '❌ ' + result.error;
-
-    }else{
+    } else {
         document.getElementById('balanceResult').textContent = '💰 Balance: ' + result;
     }
-            
-}
+});
 
-
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('sendBtn').addEventListener('click', sendData);
-    document.getElementById('balanceBtn').addEventListener('click', getBalance);
-})
-;
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', function() {
+    window.location.href = 'registration.html';
+});
