@@ -1,4 +1,4 @@
-module MeGObot
+module gw-currency-wallet
 
 go 1.26.0
 

@@ -1,32 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Registration</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial; background: #f4f4f4; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { background: white; padding: 30px; border-radius: 10px; width: 400px; }
-        h1 { text-align: center; margin-bottom: 20px; }
-        input, button { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        #message { margin-top: 10px; text-align: center; }
-        .green { color: green; }
-        .red { color: red; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Wallet</title>
+    <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
+    <div class="container">
+        <h1>🔐 JWT Тест</h1>
+        
+        <div class="tab">
+            <button id="tabSignIn" class="active" onclick="switchTab('signIn')">Вход</button>
+            <button id="tabSignUp" onclick="switchTab('signUp')">Регистрация</button>
+        </div>
 
-<div class="container">
-    <h1>Registration</h1>
-    
-    <input type="text" id="username" placeholder="Username">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button id="registerBtn">Register</button>
-    <p id="message"></p>
-</div>
-    
-    <script src="./Registrationscript.js"></script>
+        <!-- Sign In -->
+        <form id="signInForm" class="form" onsubmit="signIn(event)">
+            <input type="text" id="loginUsername" placeholder="Имя пользователя" required>
+            <input type="password" id="loginPassword" placeholder="Пароль" required>
+            <button type="submit">Войти</button>
+        </form>
+
+        <!-- Sign Up -->
+        <form id="signUpForm" class="form hidden" onsubmit="signUp(event)">
+            <input type="text" id="regUsername" placeholder="Имя пользователя" required>
+            <input type="email" id="regEmail" placeholder="Email" required>
+            <input type="password" id="regPassword" placeholder="Пароль" required>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+
+        <div id="message" class="message"></div>
+        <div class="token-label">📋 Ваш токен:</div>
+        <div id="tokenDisplay" class="token-box"></div>
+    </div>
+
+    <script src="Registrationscript.js"></script>
 </body>
 </html>

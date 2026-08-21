@@ -1,7 +1,7 @@
 services:
 
   go-app:
-    build: ./backend
+    build: ./gw-currency-wallet
     container_name: app
     depends_on:
       - postgres
@@ -12,7 +12,7 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ./backend:/app
+      - ./gw-currency-wallet:/app
     networks:
       - appnet
 

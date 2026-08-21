@@ -5,6 +5,8 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
+COPY . .
+
 EXPOSE 8082
 
-CMD go run main.go
+CMD go run cmd/main.go
