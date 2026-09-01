@@ -3,6 +3,7 @@ module gw-exchanger
 go 1.26.0
 
 require (
+	github.com/Stevenrunner4343/proto-exchange v1.0.2
 	github.com/jackc/pgx/v5 v5.10.0
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12

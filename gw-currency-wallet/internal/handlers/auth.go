@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gw-currency-wallet/internal/config"
-	"gw-currency-wallet/internal/storages/model"
+	model "gw-currency-wallet/internal/storages"
 
 	"net/http"
 	"time"
@@ -30,48 +30,35 @@ func SingUpFunc(db *pgxpool.Pool) http.HandlerFunc {
 		var a model.Account
 		var username string
 		var email string
+		var userID int
 		json.NewDecoder(r.Body).Decode(&a)
 
 		hash := sha256.Sum256([]byte(a.Password))
 		password := fmt.Sprintf("%x", hash)
 
-		err := db.QueryRow(context.Background(), "select username FROM accounts where username = $1",
-			a.Username).Scan(&username)
+		err := db.QueryRow(context.Background(), "select username FROM accounts where username = $1 AND email = $2",
+			a.Username, a.Email).Scan(&username, &email)
 
-		if err == pgx.ErrNoRows { //можжет стоит проверят username а не err
+		if err == pgx.ErrNoRows {
+			// вместо Email сделал user ID и написал один запрос всместо двух! протестировать
+			fmt.Println("НОвый Юзер добален")
 
-			err1 := db.QueryRow(context.Background(), "select username FROM accounts where email = $1",
-				a.Email).Scan(&email)
+			db.QueryRow(context.Background(), "INSERT INTO accounts (username,password,email) VALUES ($1,$2,$3) RETURNING id", a.Username, password, a.Email).Scan(&userID)
 
-			if err1 == pgx.ErrNoRows {
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+				"userId": userID,
+				"exp":    time.Now().Add(24 * time.Hour).Unix(),
+			})
+			tokenString, _ := token.SignedString(config.JwtSecret)
 
-				fmt.Println("НОвый Юзер добален")
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(map[string]string{
+				"message": "User REgistered",
+				"token":   tokenString,
+			})
 
-				db.Exec(context.Background(), "INSERT INTO accounts (username,password,email) VALUES ($1,$2,$3)", a.Username, password, a.Email)
-
-				token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-					"email": a.Email, // спрсить про то как без доп запроса к БД получать именно user_id
-					"exp":   time.Now().Add(24 * time.Hour).Unix(),
-				})
-				tokenString, _ := token.SignedString(config.JwtSecret)
-
-				w.WriteHeader(http.StatusCreated)
-				json.NewEncoder(w).Encode(map[string]string{
-					"message": "User registered successfully",
-					"token":   tokenString,
-				})
-
-			} else {
-				fmt.Println("Имэел занят")
-
-				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(map[string]string{
-					"error": "Email already used bUT the username is not taken",
-				})
-
-			}
 		} else {
-			fmt.Println("Юзер занят", err, username)
+			fmt.Println("Email или Username зАнят!", err, username, email)
 
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{
@@ -82,7 +69,7 @@ func SingUpFunc(db *pgxpool.Pool) http.HandlerFunc {
 	}
 }
 
-func SingInFunc(db *pgxpool.Pool) http.HandlerFunc { // напиcать на фронте что бы направляло на SingIn после регистрации
+func SingInFunc(db *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -116,7 +103,7 @@ func SingInFunc(db *pgxpool.Pool) http.HandlerFunc { // напиcать на ф�
 				password).Scan(&password)
 			if err1 == pgx.ErrNoRows {
 
-				w.WriteHeader(http.StatusBadRequest) //подучить http коды
+				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(map[string]string{
 					"error": "Invalid password",
 				})

@@ -1,3 +1,5 @@
+github.com/Stevenrunner4343/proto-exchange v1.0.2 h1:cXSXmxIENqhft9zz8rD3/Exmn+To7O2Iuzcp19q0vVI=
+github.com/Stevenrunner4343/proto-exchange v1.0.2/go.mod h1:HDaxWtzFAvbwZbD6dkWyx1MKAecrEGN757efCuvrodo=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -1,14 +1,13 @@
 package main
 
-// gw-exchanger/cmd/main.go
-
 import (
 	"context"
 	"fmt"
 	"gw-exchanger/internal/storages"
-	pb "gw-exchanger/proto/exchange"
 	"net"
 	"os"
+
+	pb "github.com/Stevenrunner4343/proto-exchange/exchange"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"

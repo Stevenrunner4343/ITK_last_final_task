@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gw-currency-wallet/internal/storages/model"
+	model "gw-currency-wallet/internal/storages"
+
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
