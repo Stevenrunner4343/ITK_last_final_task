@@ -11,11 +11,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func main() {
-
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+func GetRatesClient() {
+	grpcHost := os.Getenv("GRPC_HOST")
+	conn, err := grpc.NewClient(grpcHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		fmt.Println("ОШИБКА ПРИ ПОДКЛЮЧЕНИИ К GRPC:", err)
+		fmt.Println("ОШИБКА ПРИ СОЗДАНИИ КЛИЕНТ Grpc:", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
@@ -24,7 +24,7 @@ func main() {
 
 	Rates, err := client.GetExchangeRates(context.Background(), &pb.Empty{})
 	if err != nil {
-		fmt.Println("ОШИБКА ПРИ получении Курсов!", err)
+		fmt.Println("ОШИБКА ПРИ ПОДКЛЮЧЕНИИ К GRPC", err)
 		os.Exit(1)
 	}
 	fmt.Println("Все курсы:", Rates.Rates)
@@ -38,4 +38,9 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println("из чего во что и", Rate.FromCurrency, Rate.ToCurrency, Rate.Rate)
+
+}
+
+func main() {
+
 }

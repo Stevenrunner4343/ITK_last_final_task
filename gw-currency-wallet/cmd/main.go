@@ -6,6 +6,7 @@ import (
 	"gw-currency-wallet/internal/middleware"
 	"net/http"
 	"os"
+	"time"
 
 	"context"
 
@@ -30,6 +31,11 @@ func main() {
 
 	http.HandleFunc("/signUp", handlers.SingUpFunc(db))
 	http.HandleFunc("/singIn", handlers.SingInFunc(db))
+	go func() {
+		time.Sleep(15 * time.Second)
+		handlers.GetRatesClient()
+
+	}()
 
 	fmt.Println("Сервер запущен на 8082")
 	http.ListenAndServe(":8082", nil)

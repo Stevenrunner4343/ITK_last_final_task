@@ -68,10 +68,13 @@ func startGrpcServer(db *pgxpool.Pool) {
 	lis, _ := net.Listen("tcp", ":50051")
 	grpcServer := grpc.NewServer()
 	pb.RegisterExchangeServiceServer(grpcServer, &ExchangeServer{db: db})
+	fmt.Println("сервер запустился")
 	grpcServer.Serve(lis)
+
 }
 
 func main() {
+	blocker := make(chan struct{})
 	connection := fmt.Sprintf("host=postgres port=5432 user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
@@ -85,5 +88,6 @@ func main() {
 	}
 
 	go startGrpcServer(db)
+	<-blocker
 
 }
