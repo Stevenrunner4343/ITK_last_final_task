@@ -2,7 +2,7 @@ services:
 
   wallet:
     build: ./gw-currency-wallet
-    container_name: app
+    container_name: wallet
     depends_on:
       - postgres
     environment:
@@ -32,6 +32,24 @@ services:
       - appnet
     restart: unless-stopped
 
+  notification:
+    build: ./gw-notification
+    container_name: notification
+    depends_on:
+      - mongo-express
+      - postgres
+      - kafka
+      - mongodb
+
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - KAFKA_BROKER=${KAFKA_BROKER}
+    networks:
+      - appnet
+
+
   frontend:
     build: ./frontend
     container_name: frontend
@@ -43,7 +61,7 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: db
+    container_name: pgdb
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -56,6 +74,7 @@ services:
       - appnet
     restart: unless-stopped
 
+
   adminer:
     image: adminer
     container_name: adminer
@@ -65,9 +84,81 @@ services:
       - appnet
     restart: unless-stopped
 
+  mongodb:
+    image: mongo:8.0
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: pass
+      MONGO_INITDB_DATABASE: mydb
+
+    ports:
+      - "27017:27017"
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  mongo-express:
+      image: mongo-express:latest
+      container_name: mongo-express
+      depends_on:
+        - mongodb
+      environment:
+        ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+        ME_CONFIG_MONGODB_ADMINPASSWORD: pass
+        ME_CONFIG_MONGODB_SERVER: mongodb
+        ME_CONFIG_MONGODB_PORT: 27017
+      ports:
+        - "8084:8081"     
+      networks:
+        - appnet
+      restart: unless-stopped
+
+  kafka:
+    image: apache/kafka:latest
+    hostname: kafka
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_LISTENERS: 'PLAINTEXT://:9092,CONTROLLER://:29093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: '4L6g3nShT-eMCtK--X86sw'
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+    networks:
+      - appnet
+
+    restart: unless-stopped
+    
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "8083:8080"
+    networks:
+      - appnet
+    restart: unless-stopped
+
 
 volumes:
   pgdata:
+  kafka_data:
 
 networks:
   appnet:
