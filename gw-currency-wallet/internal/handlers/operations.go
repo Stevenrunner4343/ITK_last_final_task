@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	model "gw-currency-wallet/internal/storages"
 
 	"net/http"
@@ -24,7 +25,10 @@ func OperationFunc(db *pgxpool.Pool) http.HandlerFunc {
 
 		var d model.Data
 		json.NewDecoder(r.Body).Decode(&d)
-
+		if d.Amount >= 30000 {
+			KafkaProducer(d.Amount, d.Id)
+			fmt.Println("ПОлучили большк 30к")
+		}
 		_, err := db.Exec(context.Background(),
 			"INSERT INTO operations (user_id, operation, amount) VALUES ($1, $2, $3)",
 			d.Id, d.Operation, d.Amount)

@@ -7,6 +7,4 @@ RUN go mod download
 
 COPY . .
 
-EXPOSE 9092
-
 CMD go run cmd/main.go
