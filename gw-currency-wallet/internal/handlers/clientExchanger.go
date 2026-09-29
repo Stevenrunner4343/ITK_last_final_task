@@ -34,10 +34,10 @@ func GetRatesClient() {
 		ToCurrency:   "RUB",
 	})
 	if err != nil {
-		fmt.Println("ОШИБКА ПРИ получении одного кура", err)
+		fmt.Println("ОШИБКА  ПРИ получении одного кура", err)
 		os.Exit(1)
 	}
-	fmt.Println("из чего во что и", Rate.FromCurrency, Rate.ToCurrency, Rate.Rate)
+	fmt.Println("из чего во что ", Rate.FromCurrency, Rate.ToCurrency, Rate.Rate)
 
 }
 

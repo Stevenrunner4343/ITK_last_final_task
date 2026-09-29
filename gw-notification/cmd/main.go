@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"gw-notification/pkg/logger"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -68,7 +71,21 @@ func sendToMongo() {
 	fmt.Println("резутать при вставке!", result)
 }
 func main() {
-	time.Sleep(10 * time.Second)
+
+	logger.LoggerInit("gw-notification")
+	defer logger.Sync()
+
+	logger.Info("Запуск: gw-notification")
+
+	stop := make(chan os.Signal, 1)
+
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
+
+	time.Sleep(2 * time.Second)
+	logger.Info(" gracefully sHUT Down complete ")
+
+	// time.Sleep(10 * time.Second)
 	Consumer()
 	sendToMongo()
 

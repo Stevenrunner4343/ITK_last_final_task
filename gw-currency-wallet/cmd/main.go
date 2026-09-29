@@ -6,6 +6,7 @@ import (
 	"gw-currency-wallet/internal/middleware"
 	"net/http"
 	"os"
+	"time"
 
 	"context"
 
@@ -31,6 +32,7 @@ func main() {
 	http.HandleFunc("/signUp", handlers.SingUpFunc(db))
 	http.HandleFunc("/singIn", handlers.SingInFunc(db))
 	go func() {
+		time.Sleep(10 * time.Second)
 		handlers.GetRatesClient()
 
 	}()

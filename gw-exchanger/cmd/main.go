@@ -74,7 +74,7 @@ func startGrpcServer(db *pgxpool.Pool) {
 }
 
 func main() {
-	blocker := make(chan struct{})
+	blocker := make(chan struct{}) // без блокера не работает! и клиент обгоняте сервер и поэтому не запускается и
 	connection := fmt.Sprintf("host=postgres port=5432 user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
