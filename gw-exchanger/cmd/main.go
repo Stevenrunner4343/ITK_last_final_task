@@ -89,5 +89,11 @@ func main() {
 
 	go startGrpcServer(db)
 	<-blocker
+	// можно ли не блокером это сделать а gracefull shutDown
+	// stop := make(chan os.Signal, 1)
+
+	// signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	// <-stop
+	// bтипо от так
 
 }

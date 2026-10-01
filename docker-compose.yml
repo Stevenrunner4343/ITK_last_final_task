@@ -1,5 +1,14 @@
 services:
 
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "8080:80"
+    networks:
+      - appnet
+    restart: unless-stopped
+
   wallet:
     build: ./gw-currency-wallet
     container_name: wallet
@@ -42,14 +51,15 @@ services:
     env_file:
       - .env
     networks:
-      - appnet
-
-
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    ports:
-      - "8080:80"
+      - appnet 
+  analytics:
+    build: ./gw-analytics
+    container_name: analytics
+    depends_on:
+      - kafka
+      - clickhouse
+    env_file:
+      - .env
     networks:
       - appnet
     restart: unless-stopped
@@ -82,10 +92,13 @@ services:
     container_name: mongodb
     env_file:
       - .env
-
     ports:
       - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db 
+
     networks:
+    
       - appnet
     restart: unless-stopped
 
@@ -101,6 +114,33 @@ services:
       networks:
         - appnet
       restart: unless-stopped
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    env_file:
+      - .env
+    ports:
+      - "8123:8123"        
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  ch-ui:
+    image: ghcr.io/caioricciuti/ch-ui:latest
+    container_name: clickhouse-ui
+    hostname: ch-ui
+    depends_on:
+      - clickhouse
+    ports:
+      - "8085:3488"
+    env_file:
+      - .env
+    networks:
+      - appnet
+    restart: unless-stopped
 
   kafka:
     image: apache/kafka:latest
@@ -147,6 +187,8 @@ services:
 volumes:
   pgdata:
   kafka_data:
+  clickhouse_data:
+  mongodb_data:
 
 networks:
   appnet:

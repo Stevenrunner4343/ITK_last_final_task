@@ -3,16 +3,17 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	model "gw-currency-wallet/internal/storages"
+	"gw-currency-wallet/pkg/logger"
 
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 )
 
-func OperationFunc(db *pgxpool.Pool) http.HandlerFunc {
+func OperationFunc(db *pgxpool.Pool, producer *Producer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -24,16 +25,31 @@ func OperationFunc(db *pgxpool.Pool) http.HandlerFunc {
 		}
 
 		var d model.Data
-		json.NewDecoder(r.Body).Decode(&d)
-		if d.Amount >= 30000 {
-			KafkaProducer(d.Amount, d.Id)
-			fmt.Println("ПОлучили большк 30к")
+
+		err := json.NewDecoder(r.Body).Decode(&d)
+		if err != nil {
+			logger.Error("Ошибка при Декодирвоание Данных Из ЗАпроса", zap.Error(err), zap.Int("user_id", d.Id))
+			return
 		}
-		_, err := db.Exec(context.Background(),
+		if d.Amount >= 30000 {
+			err := producer.Send(r.Context(), d, TopicBigMoney)
+			if err != nil {
+				logger.Error("Ошибка при отправки Брокером сообщения о Боольшой сумме в Notification", zap.Error(err), zap.Int("user_id", d.Id))
+				return
+			}
+		}
+
+		_, err = db.Exec(context.Background(),
 			"INSERT INTO operations (user_id, operation, amount) VALUES ($1, $2, $3)",
 			d.Id, d.Operation, d.Amount)
 		if err != nil {
-			fmt.Println("ОШИБКА ПРИ Зипис в бд", err)
+			logger.Error("ОШИБКА ЗАПИСИ в бд", zap.Error(err), zap.Int("user_id", d.Id))
+			return
+		}
+		err = producer.Send(r.Context(), d, TopicAnalytics)
+		if err != nil {
+			logger.Error("Ошибка при отправки Брокером сообщения в Аналитику", zap.Error(err), zap.Int("user_id", d.Id))
+			return
 		}
 
 	}

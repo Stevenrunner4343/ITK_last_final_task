@@ -75,8 +75,6 @@ func main() {
 	logger.LoggerInit("gw-notification")
 	defer logger.Sync()
 
-	logger.Info("Запуск: gw-notification")
-
 	stop := make(chan os.Signal, 1)
 
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)

@@ -1,20 +1,60 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"gw-currency-wallet/internal/handlers"
 	"gw-currency-wallet/internal/middleware"
+	"gw-currency-wallet/pkg/logger"
+	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"context"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/segmentio/kafka-go"
 )
+
+var wg = sync.WaitGroup{}
+
+func produceTest() {
+
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	if kafkaBroker == "" {
+		kafkaBroker = "kafka:9092"
+	}
+
+	writer := &kafka.Writer{
+		Addr:  kafka.TCP(kafkaBroker),
+		Topic: "analytics",
+	}
+	defer writer.Close()
+
+	for i := range 10000 {
+		wg.Add(1)
+		go func() {
+			wg.Done()
+			data, _ := json.Marshal(map[string]any{
+				"id":     i,
+				"amount": rand.Intn(70000) + 30000,
+			})
+			_ = writer.WriteMessages(context.Background(), kafka.Message{Value: data})
+
+		}()
+
+	}
+	wg.Wait()
+	fmt.Println("10000 сообщений отправлено")
+}
 
 func main() {
 
+	logger.LoggerInit("gw-currency-wallet")
+	defer logger.Sync()
+	produceTest()
 	connection := fmt.Sprintf("host=postgres port=5432 user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
@@ -26,11 +66,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	producer := handlers.NewProducer()
+	defer producer.Close()
+
 	http.HandleFunc("/balance", middleware.Middleware(handlers.BalanceFunc(db)))
-	http.HandleFunc("/operation", handlers.OperationFunc(db)) //ОБЕРНУТЬ В MIDDDLEWARE
+	http.HandleFunc("/operation", handlers.OperationFunc(db, producer)) //ОБЕРНУТЬ В MIDDDLEWARE
 
 	http.HandleFunc("/signUp", handlers.SingUpFunc(db))
 	http.HandleFunc("/singIn", handlers.SingInFunc(db))
+
 	go func() {
 		time.Sleep(10 * time.Second)
 		handlers.GetRatesClient()
