@@ -2,7 +2,9 @@ package consumer
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	model "gw-analytics/internal/storage/model"
 	"gw-analytics/pkg/logger"
 	"os"
 	"time"
@@ -33,31 +35,6 @@ func NewConsumer(ctx context.Context, chConn driver.Conn) *Consumer {
 			CommitInterval: 0,
 		})
 
-	// go func() {
-	// 	for {
-	// 		msg, err := c.reader.ReadMessage(ctx)
-
-	// 		if err != nil {
-	// 			if errors.Is(err, context.Canceled) {
-	// 				logger.Info("Отменили КОнтекст Отснавливаемся!")
-	// 				return
-	// 			}
-	// 			logger.Error("Ошибка чтенияСообщения из КОнсюмера", zap.Error(err))
-	// 		}
-
-	// 		err = c.conn.Exec(ctx,
-	// 			"INSERT INTO events (ts, event_type, status) VALUES (?, ?, ?)",
-	// 			time.Now(), "message", string(msg.Value),
-	// 		)
-	// 		if err != nil {
-	// 			logger.Error("Ошибка вставки в ClickHouse", zap.Error(err))
-	// 			return
-	// 		}
-	// 		fmt.Println("вставлено ", string(msg.Value))
-
-	// 	}
-
-	// }()
 	go c.run(ctx)
 
 	return c
@@ -65,20 +42,23 @@ func NewConsumer(ctx context.Context, chConn driver.Conn) *Consumer {
 }
 func (c *Consumer) run(ctx context.Context) {
 	var buffer []kafka.Message
+
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-
+	var e model.Event
 	flush := func() {
 		if len(buffer) == 0 {
 			return
 		}
-		batch, err := c.conn.PrepareBatch(ctx, "INSERT INTO events (ts, event_type, status)")
+		batch, err := c.conn.PrepareBatch(ctx, "INSERT INTO events (event_id, created_at, operation, user_id, amount, latency_ms)")
 		if err != nil {
 			logger.Error("PrepareBatch", zap.Error(err))
 			return
 		}
 		for _, m := range buffer {
-			_ = batch.Append(time.Now(), "message", string(m.Value))
+			json.Unmarshal(m.Value, &e)
+			latency := time.Since(e.CreatedAt).Milliseconds()
+			_ = batch.Append(e.ID, e.CreatedAt, e.Operation, e.UserID, e.Amount, latency)
 		}
 		if err := batch.Send(); err != nil {
 			logger.Error("batch.Send", zap.Error(err))

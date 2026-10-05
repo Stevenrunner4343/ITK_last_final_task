@@ -21,30 +21,36 @@ import (
 var wg = sync.WaitGroup{}
 
 func produceTest() {
-
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	if kafkaBroker == "" {
 		kafkaBroker = "kafka:9092"
 	}
 
 	writer := &kafka.Writer{
-		Addr:  kafka.TCP(kafkaBroker),
-		Topic: "analytics",
+		Addr:     kafka.TCP(kafkaBroker),
+		Topic:    "analytics",
+		Balancer: &kafka.LeastBytes{},
 	}
 	defer writer.Close()
 
-	for i := range 10000 {
+	operations := []string{"deposit", "withdraw"}
+
+	for i := 0; i < 10000; i++ {
 		wg.Add(1)
-		go func() {
-			wg.Done()
+		go func(id int) {
+			defer wg.Done()
 			data, _ := json.Marshal(map[string]any{
-				"id":     i,
-				"amount": rand.Intn(70000) + 30000,
+				"id":         id,
+				"operation":  operations[id%2],
+				"user_id":    id % 100,
+				"amount":     rand.Intn(70000) + 30000,
+				"created_at": time.Now(),
 			})
-			_ = writer.WriteMessages(context.Background(), kafka.Message{Value: data})
-
-		}()
-
+			err := writer.WriteMessages(context.Background(), kafka.Message{Value: data})
+			if err != nil {
+				fmt.Println("ОШИБКА:", err)
+			}
+		}(i)
 	}
 	wg.Wait()
 	fmt.Println("10000 сообщений отправлено")

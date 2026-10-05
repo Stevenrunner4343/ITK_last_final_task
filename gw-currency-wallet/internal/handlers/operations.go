@@ -3,8 +3,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"math/rand"
+	"time"
 
-	model "gw-currency-wallet/internal/storages"
+	model "gw-currency-wallet/internal/storages/model"
 	"gw-currency-wallet/pkg/logger"
 
 	"net/http"
@@ -46,7 +48,14 @@ func OperationFunc(db *pgxpool.Pool, producer *Producer) http.HandlerFunc {
 			logger.Error("ОШИБКА ЗАПИСИ в бд", zap.Error(err), zap.Int("user_id", d.Id))
 			return
 		}
-		err = producer.Send(r.Context(), d, TopicAnalytics)
+		var e model.Event
+		e.ID = rand.Uint64() // число с 19 нулями коллизия будет через 1000 лет
+		e.Operation = d.Operation
+		e.UserID = d.Id
+		e.Amount = d.Amount
+		e.CreatedAt = time.Now()
+
+		err = producer.Send(r.Context(), e, TopicAnalytics)
 		if err != nil {
 			logger.Error("Ошибка при отправки Брокером сообщения в Аналитику", zap.Error(err), zap.Int("user_id", d.Id))
 			return

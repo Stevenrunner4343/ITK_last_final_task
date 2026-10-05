@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	model "gw-currency-wallet/internal/storages"
+	model "gw-currency-wallet/internal/storages/model"
 
 	"net/http"
 

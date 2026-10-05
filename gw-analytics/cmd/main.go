@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"gw-analytics/internal/consumer"
 	"gw-analytics/internal/storage/clickhouse"
@@ -28,6 +29,10 @@ func main() {
 	logger.Info("Соединение с ClickHouse установлено")
 
 	reader := consumer.NewConsumer(ctx, chConn)
+
+	time.Sleep(time.Second * 10)
+	clickhouse.Aggregation(ctx, chConn)
+
 	defer reader.Close()
 	<-ctx.Done()
 

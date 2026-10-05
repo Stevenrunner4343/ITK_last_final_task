@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	model "gw-currency-wallet/internal/storages"
 	"gw-currency-wallet/pkg/logger"
 	"os"
 
@@ -32,7 +31,9 @@ func NewProducer() *Producer {
 	return p
 }
 
-func (p *Producer) Send(ctx context.Context, data model.Data, topic string) error {
+// вопрос по статусу если у меня не success я вообще не передаю! Так что не понятно зачем
+
+func (p *Producer) Send(ctx context.Context, data any, topic string) error {
 	result, err := json.Marshal(data)
 	if err != nil {
 		return err

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gw-currency-wallet/internal/config"
-	model "gw-currency-wallet/internal/storages"
+	model "gw-currency-wallet/internal/storages/model"
 
 	"net/http"
 	"time"
