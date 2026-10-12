@@ -6,6 +6,3 @@ type MongoDb struct {
 	client *mongo.Client
 	db     *mongo.Database
 }
-
-type MongoConfig struct {
-}

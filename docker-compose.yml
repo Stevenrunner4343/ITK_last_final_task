@@ -9,139 +9,6 @@ services:
       - appnet
     restart: unless-stopped
 
-  wallet:
-    build: ./gw-currency-wallet
-    container_name: wallet
-    depends_on:
-      - exchanger
-      - postgres
-      - kafka
-      
-    env_file:
-      - .env
-    ports:
-      - "8082:8082"
-    volumes:
-      - ./gw-currency-wallet:/app
-    networks:
-      - appnet
-
-  exchanger:
-    build: ./gw-exchanger 
-    container_name: exchanger
-    depends_on:
-      - postgres
-    env_file:
-      - .env
-    ports:
-      - "50051:50051" 
-    networks:
-      - appnet
-    restart: unless-stopped
-
-  notification:
-    build: ./gw-notification
-    container_name: notification
-    depends_on:
-      - mongo-express
-      - postgres
-      - kafka
-      - mongodb
-
-    env_file:
-      - .env
-    networks:
-      - appnet 
-  analytics:
-    build: ./gw-analytics
-    container_name: analytics
-    depends_on:
-      - kafka
-      - clickhouse
-    env_file:
-      - .env
-    networks:
-      - appnet
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:15-alpine
-    container_name: pgdb
-    env_file:
-      - .env
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-      - appnet
-    restart: unless-stopped
-
-
-  adminer:
-    image: adminer
-    container_name: adminer
-    ports:
-      - "8081:8080"
-    networks:
-      - appnet
-    restart: unless-stopped
-
-  mongodb:
-    image: mongo:8.0
-    container_name: mongodb
-    env_file:
-      - .env
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db 
-
-    networks:
-    
-      - appnet
-    restart: unless-stopped
-
-  mongo-express:
-      image: mongo-express:latest
-      container_name: mongo-express
-      depends_on:
-        - mongodb
-      env_file:
-        - .env
-      ports:
-        - "8084:8081"     
-      networks:
-        - appnet
-      restart: unless-stopped
-
-  clickhouse:
-    image: clickhouse/clickhouse-server:latest
-    container_name: clickhouse
-    env_file:
-      - .env
-    ports:
-      - "8123:8123"        
-    volumes:
-      - clickhouse_data:/var/lib/clickhouse
-    networks:
-      - appnet
-    restart: unless-stopped
-
-  ch-ui:
-    image: ghcr.io/caioricciuti/ch-ui:latest
-    container_name: clickhouse-ui
-    hostname: ch-ui
-    depends_on:
-      - clickhouse
-    ports:
-      - "8085:3488"
-    env_file:
-      - .env
-    networks:
-      - appnet
-    restart: unless-stopped
-
   kafka:
     image: apache/kafka:latest
     hostname: kafka
@@ -182,6 +49,144 @@ services:
     networks:
       - appnet
     restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: pgdb
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - appnet
+    restart: unless-stopped
+
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - appnet
+    restart: unless-stopped
+
+
+  exchanger:
+    build: ./gw-exchanger 
+    container_name: exchanger
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    ports:
+      - "50051:50051" 
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  wallet:
+    build: ./gw-currency-wallet
+    container_name: wallet
+    depends_on:
+      - exchanger
+      - postgres
+      - kafka
+      
+    env_file:
+      - .env
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./gw-currency-wallet:/app
+    networks:
+      - appnet
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    env_file:
+      - .env
+    ports:
+      - "8123:8123"        
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  ch-ui:
+    image: ghcr.io/caioricciuti/ch-ui:latest
+    container_name: clickhouse-ui
+    hostname: ch-ui
+    depends_on:
+      - clickhouse
+    ports:
+      - "8085:3488"
+    env_file:
+      - .env
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  analytics:
+    build: ./gw-analytics
+    container_name: analytics
+    depends_on:
+      - kafka
+      - clickhouse
+    env_file:
+      - .env
+    networks:
+      - appnet
+    restart: unless-stopped
+
+
+
+  mongodb:
+    image: mongo:8.0
+    container_name: mongodb
+    env_file:
+      - .env
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db 
+
+    networks:
+    
+      - appnet
+    restart: unless-stopped
+
+  mongo-express:
+      image: mongo-express:latest
+      container_name: mongo-express
+      depends_on:
+        - mongodb
+      env_file:
+        - .env
+      ports:
+        - "8084:8081"     
+      networks:
+        - appnet
+      restart: unless-stopped
+
+  notification:
+    build: ./gw-notification
+    container_name: notification
+    depends_on:
+      - mongo-express
+      - postgres
+      - kafka
+      - mongodb
+
+    env_file:
+      - .env
+    networks:
+      - appnet 
 
 
 volumes:

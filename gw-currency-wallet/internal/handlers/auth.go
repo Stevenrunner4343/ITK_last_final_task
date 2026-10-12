@@ -1,122 +1,80 @@
 package handlers
 
 import (
-	"context"
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
-	"gw-currency-wallet/internal/config"
+	"errors"
+	"gw-currency-wallet/internal/repository"
+	"gw-currency-wallet/internal/service"
 	model "gw-currency-wallet/internal/storages/model"
 
 	"net/http"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SingUpFunc(db *pgxpool.Pool) http.HandlerFunc {
+func SingUpFunc(auth *service.AuthService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 		var a model.Account
-		var username string
-		var email string
-		var userID int
+
 		json.NewDecoder(r.Body).Decode(&a)
 
-		hash := sha256.Sum256([]byte(a.Password))
-		password := fmt.Sprintf("%x", hash)
-
-		err := db.QueryRow(context.Background(), "select username FROM accounts where username = $1 AND email = $2",
-			a.Username, a.Email).Scan(&username, &email)
-
-		if err == pgx.ErrNoRows {
-			// вместо Email сделал user ID и написал один запрос всместо двух! протестировать
-			fmt.Println("НОвый Юзер добален")
-
-			db.QueryRow(context.Background(), "INSERT INTO accounts (username,password,email) VALUES ($1,$2,$3) RETURNING id", a.Username, password, a.Email).Scan(&userID)
-
-			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-				"userId": userID,
-				"exp":    time.Now().Add(24 * time.Hour).Unix(),
-			})
-			tokenString, _ := token.SignedString(config.JwtSecret)
-
-			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(map[string]string{
-				"message": "User REgistered",
-				"token":   tokenString,
-			})
-
-		} else {
-			fmt.Println("Email или Username зАнят!", err, username, email)
-
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Username already exists",
-			})
-
+		tokenString, err := auth.MakeNewUser(r.Context(), a)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": "Такой Юзеру уже есть",
+				})
+				return
+			} else {
+				http.Error(w, "Внутрення Ошибка Из Сервиса", http.StatusInternalServerError)
+				return
+			}
 		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Юзер зарегетсрирован",
+			"token":   tokenString,
+		})
+
 	}
 }
 
-func SingInFunc(db *pgxpool.Pool) http.HandlerFunc {
+func SingInFunc(auth *service.AuthService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 		var a model.Account
-		var username string
 		json.NewDecoder(r.Body).Decode(&a)
 
-		hash := sha256.Sum256([]byte(a.Password))
-		password := fmt.Sprintf("%x", hash)
+		err := auth.CheckUser(r.Context(), a)
 
-		err := db.QueryRow(context.Background(), "SELECT username FROM accounts WHERE username = $1 ",
-			a.Username).Scan(&username)
-		if err == pgx.ErrNoRows {
+		if err != nil {
+			if err == repository.ErrNotFound {
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": "НЕ верное Имя",
+				})
+				return
 
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Invalid username",
-			})
-			fmt.Println("SIGn In нет такого юзера")
-
-		} else {
-
-			err1 := db.QueryRow(context.Background(), "SELECT username FROM accounts WHERE password = $1 ",
-				password).Scan(&password)
-			if err1 == pgx.ErrNoRows {
+			}
+			if err == repository.ErrWrongPassword {
 
 				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(map[string]string{
-					"error": "Invalid password",
+					"error": "Не верный пароль",
 				})
-				fmt.Println("SIGn In не верный пароль ")
+				return
 
 			} else {
-				w.WriteHeader(http.StatusCreated)
-				json.NewEncoder(w).Encode(map[string]string{
-					"message": "succsessfully logged",
-				})
-
+				http.Error(w, "Внутрення Ошибка Из Сервиса", http.StatusInternalServerError)
+				return
 			}
 
 		}
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "successfully logged in",
+		})
 	}
+
 }

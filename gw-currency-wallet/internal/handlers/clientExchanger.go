@@ -3,9 +3,11 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"gw-currency-wallet/pkg/logger"
 	"os"
 
 	pb "github.com/Stevenrunner4343/proto-exchange/exchange"
+	"go.uber.org/zap"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -15,7 +17,7 @@ func GetRatesClient() {
 	grpcHost := os.Getenv("GRPC_HOST")
 	conn, err := grpc.NewClient(grpcHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		fmt.Println("ОШИБКА ПРИ СОЗДАНИИ КЛИЕНТ Grpc:", err)
+		logger.Error("Ошибка при СОздании Клиента", zap.Error(err))
 		os.Exit(1)
 	}
 	defer conn.Close()
@@ -24,7 +26,7 @@ func GetRatesClient() {
 
 	Rates, err := client.GetExchangeRates(context.Background(), &pb.Empty{})
 	if err != nil {
-		fmt.Println("ОШИБКА ПРИ ПОДКЛЮЧЕНИИ К GRPC", err)
+		logger.Error("Ошибка при Подключении GRPC", zap.Error(err))
 		os.Exit(1)
 	}
 	fmt.Println("Все курсы:", Rates.Rates)
@@ -34,13 +36,9 @@ func GetRatesClient() {
 		ToCurrency:   "RUB",
 	})
 	if err != nil {
-		fmt.Println("ОШИБКА  ПРИ получении одного кура", err)
+		logger.Error("Ошибка при Получении одного курса", zap.Error(err))
 		os.Exit(1)
 	}
 	fmt.Println("из чего во что ", Rate.FromCurrency, Rate.ToCurrency, Rate.Rate)
-
-}
-
-func main() {
 
 }

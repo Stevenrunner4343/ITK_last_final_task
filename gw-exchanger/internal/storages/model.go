@@ -1,7 +1,7 @@
-package storages
+package model
 
 type Currency struct {
-	USD float32
-	EUR float32
-	RUB float32
+	USD int32
+	EUR int32
+	RUB int32
 }

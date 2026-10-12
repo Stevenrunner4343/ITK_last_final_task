@@ -52,7 +52,7 @@ func (c *Consumer) run(ctx context.Context) {
 		}
 		batch, err := c.conn.PrepareBatch(ctx, "INSERT INTO events (event_id, created_at, operation, user_id, amount, latency_ms)")
 		if err != nil {
-			logger.Error("PrepareBatch", zap.Error(err))
+			logger.Error("Ошиька при создании батча", zap.Error(err))
 			return
 		}
 		for _, m := range buffer {
@@ -61,11 +61,11 @@ func (c *Consumer) run(ctx context.Context) {
 			_ = batch.Append(e.ID, e.CreatedAt, e.Operation, e.UserID, e.Amount, latency)
 		}
 		if err := batch.Send(); err != nil {
-			logger.Error("batch.Send", zap.Error(err))
+			logger.Error("Огиька при Отправк Батча", zap.Error(err))
 			return
 		}
-		logger.Info("batch sent", zap.Int("rows", len(buffer)))
-		buffer = buffer[:0] // переиспользуем слайс
+
+		buffer = buffer[:0]
 	}
 
 	for {
@@ -78,7 +78,7 @@ func (c *Consumer) run(ctx context.Context) {
 				if errors.Is(err, context.Canceled) {
 					return
 				}
-				logger.Error("read", zap.Error(err))
+				logger.Error("ОШИБКА ПРи чтении в очередь Кафка", zap.Error(err))
 				continue
 			}
 			buffer = append(buffer, msg)
@@ -93,5 +93,4 @@ func (c *Consumer) Close() {
 	if err != nil {
 		logger.Error("Ошибка При закрытии Консюмера! ", zap.Error(err))
 	}
-	// может и не надо логировать закртие вообще
 }

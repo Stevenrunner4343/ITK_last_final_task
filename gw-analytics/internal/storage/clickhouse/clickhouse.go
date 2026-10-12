@@ -1,7 +1,7 @@
 package clickhouse
 
 import (
-	"os"
+	"gw-analytics/internal/config"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -9,12 +9,12 @@ import (
 
 func NewConnection() (driver.Conn, error) {
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{os.Getenv("CLICKHOUSE_ADDR")},
+		Addr: config.CLICKHOUSE_ADDR,
 
 		Auth: clickhouse.Auth{
-			Database: os.Getenv("CLICKHOUSE_DB"),
-			Username: os.Getenv("CLICKHOUSE_USER"),
-			Password: os.Getenv("CLICKHOUSE_PASSWORD"),
+			Database: config.CLICKHOUSE_DB,
+			Username: config.CLICKHOUSE_USER,
+			Password: config.CLICKHOUSE_PASSWORD,
 		},
 	})
 	if err != nil {

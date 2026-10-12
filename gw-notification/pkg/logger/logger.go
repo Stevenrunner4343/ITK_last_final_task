@@ -8,7 +8,6 @@ import (
 var log *zap.Logger
 
 func LoggerInit(service string) {
-	// дописать что бы было Id транзакции
 
 	cfg := zap.NewProductionConfig()
 	cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)

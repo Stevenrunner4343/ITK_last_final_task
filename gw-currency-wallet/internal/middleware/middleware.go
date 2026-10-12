@@ -9,6 +9,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const EmailKey = "email"
+
 func Middleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -28,7 +30,7 @@ func Middleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		tokenCheck, _ := jwt.Parse(token, func(t *jwt.Token) (any, error) {
-			return config.JwtSecret, nil
+			return config.JWT, nil
 		})
 
 		if !tokenCheck.Valid {
@@ -39,7 +41,7 @@ func Middleware(next http.HandlerFunc) http.HandlerFunc {
 		claims := tokenCheck.Claims.(jwt.MapClaims)
 		email := claims["email"].(string)
 
-		ctx := context.WithValue(r.Context(), "email", email)
+		ctx := context.WithValue(r.Context(), EmailKey, email)
 		next(w, r.WithContext(ctx))
 	}
 
