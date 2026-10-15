@@ -19,3 +19,7 @@ type Account struct {
 	Password string `json:"password"`
 	Email    string `json:"email"`
 }
+type Currency struct {
+	From string
+	To   string
+}

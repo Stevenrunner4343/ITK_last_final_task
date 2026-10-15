@@ -2,33 +2,43 @@ package main
 
 import (
 	"context"
-	"gw-notification/internal/consumer"
-	"gw-notification/pkg/logger"
-	"os"
 	"os/signal"
 	"syscall"
-	"time"
+
+	"gw-notification/internal/consumer"
+	"gw-notification/internal/repository"
+	"gw-notification/internal/service"
+	"gw-notification/pkg/logger"
+
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.uber.org/zap"
 )
 
-type Test struct {
-	Name string `bson:"name"`
-	Age  int    `bson:"age"`
-}
-
 func main() {
-
 	logger.LoggerInit("gw-notification")
 	defer logger.Sync()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-
 	defer cancel()
-	consumer.NewConsumer(ctx)
 
-	stop := make(chan os.Signal, 1)
+	uri := "mongodb://admin:pass@mongodb:27017/mydb?authSource=admin"
+	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	if err != nil {
+		logger.Error("ОШибка при подключении к монго!", zap.Error(err))
+		return
+	}
+	defer client.Disconnect(context.Background())
 
-	<-stop
-	time.Sleep(2 * time.Second)
-	logger.Info(" gracefully sHUT Down complete ")
+	repo := repository.NewNotificationRepo(client, "mydb", "testTable")
+
+	svc := service.NewNotificationService(repo)
+
+	cons := consumer.NewConsumer(svc)
+	defer cons.Close()
+
+	go cons.Run(ctx)
+
+	<-ctx.Done()
 
 }

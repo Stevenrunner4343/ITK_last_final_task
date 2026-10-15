@@ -2,74 +2,56 @@ package consumer
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"gw-notification/internal/storages/model"
-	"gw-notification/pkg/logger"
 	"os"
 
+	"gw-notification/internal/service"
+	"gw-notification/pkg/logger"
+
 	"github.com/segmentio/kafka-go"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/zap"
 )
 
 type Consumer struct {
-	reader     *kafka.Reader
-	client     *mongo.Client
-	collection *mongo.Collection
+	reader *kafka.Reader
+	svc    *service.NotificationService
 }
 
-func NewConsumer(ctx context.Context) *Consumer {
-	c := &Consumer{}
-
-	uri := "mongodb://admin:pass@mongodb:27017/mydb?authSource=admin"
-
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
-	if err != nil {
-		logger.Error("Ошибка при создании Клиента Монго", zap.Error(err))
-		os.Exit(1)
-	}
-	c.collection = client.Database("mydb").Collection("testTable")
-	c.client = client
+func NewConsumer(svc *service.NotificationService) *Consumer {
+	c := &Consumer{svc: svc}
 
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 
-	c.reader = kafka.NewReader(
-		kafka.ReaderConfig{
-			Brokers:        []string{kafkaBroker},
-			Topic:          "big-money",
-			GroupID:        "big-money-group",
-			StartOffset:    kafka.FirstOffset,
-			CommitInterval: 0,
-		})
-
-	go c.SendToMongo(ctx)
+	c.reader = kafka.NewReader(kafka.ReaderConfig{
+		Brokers:        []string{kafkaBroker},
+		Topic:          "big-money",
+		GroupID:        "big-money-group",
+		StartOffset:    kafka.FirstOffset,
+		CommitInterval: 0,
+	})
 
 	return c
-
 }
 
-func (c *Consumer) SendToMongo(ctx context.Context) {
-
+func (c *Consumer) Run(ctx context.Context) {
 	for {
 		msg, err := c.reader.ReadMessage(ctx)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
-			logger.Error("ОШИБКА ПРи чтении в очередь Кафка", zap.Error(err))
+			logger.Error("Ошиька при Чтении Сообщений из кафки", zap.Error(err))
 			continue
 		}
 
-		var d model.Data
-		err = json.Unmarshal(msg.Value, &d)
+		err = c.svc.ProcessMessage(ctx, msg.Value)
 		if err != nil {
-			logger.Error("ОШИБКА ДЕкодировании JsoN пЕРЕД ВСТАВКОЙ В moNGO", zap.Error(err))
-		}
-		_, err = c.collection.InsertOne(ctx, d)
-		if err != nil {
-			logger.Error("ОШИБКА ПРи вставке В МОНго", zap.Error(err))
+			logger.Error("Внутення ошибка из Сервиса", zap.Error(err))
+			continue
 		}
 	}
+}
+
+func (c *Consumer) Close() error {
+	return c.reader.Close()
 }

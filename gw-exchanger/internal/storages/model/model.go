@@ -1,4 +1,4 @@
-package storages
+package model
 
 type Currency struct {
 	USD int32
